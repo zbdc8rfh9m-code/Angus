@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>油管英語場景庫</title>
+    <title>油管英語場景庫 - 真實連線版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -21,49 +21,28 @@
         .word:hover { color: #facc15; background-color: rgba(250, 204, 21, 0.15); border-radius: 4px; transform: translateY(-2px); }
         
         .video-card:hover .cover-img { transform: scale(1.05); }
-        
-        /* 載入中的小動畫 */
-        .loader { border: 3px solid #334155; border-top: 3px solid #facc15; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div id="root">
-        <div style="color: white; text-align: center; margin-top: 100px; font-size: 20px;">
-            正在載入中...<br><br>
-            <span style="font-size: 14px; color: #94a3b8;">(如果卡在這裡，請重新複製全選貼上喔！)</span>
-        </div>
+        <div style="color: white; text-align: center; margin-top: 100px; font-size: 20px;">正在載入系統中...</div>
     </div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        const VIDEO_DATABASE = [
+        // 【完整版字幕】這次 19 秒的影片，每一句話都完整對齊了！
+        const DEFAULT_VIDEOS = [
             {
                 id: 'jNQXAC9IVRw',
                 title: 'YouTube 史上第一支影片 (Me at the zoo)',
                 cover: 'https://img.youtube.com/vi/jNQXAC9IVRw/hqdefault.jpg',
-                duration: '0:18',
-                tags: ['初級', '日常 Vlog'],
+                tags: ['預設完整版', '初級'],
                 subtitles: [
                     { start: 0, end: 3, en: "Alright, so here we are in front of the elephants.", zh: "好的，我們現在在這些大象面前。" },
                     { start: 3, end: 8, en: "And the cool thing about these guys is that they have really, really, really long trunks.", zh: "這些傢伙最酷的地方在於，牠們有非常非常長的鼻子。" },
                     { start: 8, end: 12, en: "And that's, that's cool.", zh: "而那，那真的很酷。" },
-                    { start: 12, end: 18, en: "And that's pretty much all there is to say.", zh: "大概就是這樣了。" }
-                ]
-            },
-            {
-                id: 'dQw4w9WgXcQ',
-                title: '經典神曲 (Never Gonna Give You Up)',
-                cover: 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
-                duration: '3:32',
-                tags: ['中級', '音樂原聲'],
-                subtitles: [
-                    { start: 0, end: 18, en: "(Music playing)", zh: "(音樂播放中)" },
-                    { start: 18, end: 22, en: "We're no strangers to love", zh: "我們對愛情並不陌生" },
-                    { start: 22, end: 27, en: "You know the rules and so do I", zh: "你懂規矩，我也懂" },
-                    { start: 27, end: 35, en: "A full commitment's what I'm thinking of", zh: "我心裡想的是全心全意的承諾" },
-                    { start: 35, end: 40, en: "You wouldn't get this from any other guy", zh: "你無法從其他男人那裡得到這個" }
+                    { start: 12, end: 19, en: "And that's pretty much all there is to say.", zh: "大概就是這樣了。" }
                 ]
             }
         ];
@@ -91,27 +70,24 @@
                         )}
                     </main>
 
-                    {/* 字典彈窗 UI */}
+                    {/* 字典彈出視窗 */}
                     {dictWord && (
                         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={closeDict}>
-                            <div className="bg-[#1e293b] border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full transform transition-all" onClick={(e) => e.stopPropagation()}>
+                            <div className="bg-[#1e293b] border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
                                     <h3 className="text-2xl font-bold text-yellow-400 font-serif">{dictWord.word}</h3>
                                     <button onClick={closeDict} className="text-slate-400 hover:text-white text-xl">&times;</button>
                                 </div>
                                 <div className="space-y-4">
-                                    <div className="bg-slate-800 p-4 rounded-lg text-slate-200 text-base">
-                                        {dictWord.loading ? (
-                                            <div><div className="loader"></div> 雲端翻譯中...</div>
+                                    <div className="bg-slate-800 p-4 rounded-lg text-slate-200 text-lg flex items-center gap-3">
+                                        {dictWord.isLoading ? (
+                                            <span className="animate-pulse text-slate-400">🔍 {dictWord.translation}</span>
                                         ) : (
-                                            <div>
-                                                <span className="text-slate-500 block mb-1 text-sm">雲端翻譯結果：</span>
-                                                {dictWord.translation}
-                                            </div>
+                                            <span>💡 {dictWord.translation}</span>
                                         )}
                                     </div>
                                     <div className="text-xs text-slate-500 bg-black/20 p-2 rounded">
-                                        💡 提示：使用免費翻譯 API 獲取即時結果。
+                                        此翻譯結果由真實 API (MyMemory) 即時抓取提供。
                                     </div>
                                 </div>
                             </div>
@@ -122,25 +98,95 @@
         }
 
         function HomeView({ onSelectVideo }) {
+            const [customId, setCustomId] = useState("");
+            const [customTranscript, setCustomTranscript] = useState("");
+
+            const handleGenerate = () => {
+                if (!customId || !customTranscript) {
+                    alert("請輸入影片 ID 與轉錄稿！");
+                    return;
+                }
+
+                const lines = customTranscript.split('\n').map(l => l.trim()).filter(Boolean);
+                let resultSubs = [];
+                let currentSub = null;
+
+                // 更聰明的字幕解析器
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i];
+                    const timeMatch = line.match(/^(\d{1,2}:)?(\d{1,2}):(\d{2})/);
+                    
+                    if (timeMatch) {
+                        const timeStr = timeMatch[0];
+                        const parts = timeStr.split(':').map(Number);
+                        let seconds = parts.length === 2 ? parts[0] * 60 + parts[1] : parts[0] * 3600 + parts[1] * 60 + parts[2];
+
+                        if (currentSub) {
+                            currentSub.end = seconds;
+                            resultSubs.push(currentSub);
+                        }
+                        currentSub = { start: seconds, end: seconds + 5, en: "", zh: "（DIY 匯入模式請專注英文聽力）" };
+                        
+                        let text = line.replace(timeStr, '').trim();
+                        if (text) currentSub.en = text;
+                    } else {
+                        if (currentSub) {
+                            currentSub.en += (currentSub.en ? " " : "") + line;
+                        }
+                    }
+                }
+                if (currentSub) {
+                    currentSub.end = currentSub.start + 5;
+                    resultSubs.push(currentSub);
+                }
+
+                const newVideo = {
+                    id: customId.trim(),
+                    title: `專屬影片 (${customId.trim()})`,
+                    cover: `https://img.youtube.com/vi/${customId.trim()}/hqdefault.jpg`,
+                    tags: ['DIY 匯入'],
+                    subtitles: resultSubs
+                };
+
+                onSelectVideo(newVideo);
+            };
+
             return (
-                <div className="max-w-6xl mx-auto p-6 md:p-10">
-                    <div className="mb-10">
-                        <h1 className="text-3xl font-bold mb-2">✦ 沉浸式真實語境</h1>
-                        <p className="text-slate-400">從全網精選的實境短片中提取高頻語料，點擊影片立即開始學習。</p>
+                <div className="max-w-6xl mx-auto p-6 md:p-10 flex flex-col lg:flex-row gap-10">
+                    <div className="flex-1">
+                        <div className="mb-8">
+                            <h1 className="text-3xl font-bold mb-2">✦ 系統預設影片</h1>
+                            <p className="text-slate-400">這支影片的字幕是完整的，點擊進去測試真實翻譯 API 吧！</p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {DEFAULT_VIDEOS.map(video => (
+                                <div key={video.id} className="video-card bg-[#0f172a] border border-slate-800 rounded-xl overflow-hidden cursor-pointer hover:border-slate-600 transition shadow-lg group" onClick={() => onSelectVideo(video)}>
+                                    <div className="aspect-video overflow-hidden relative">
+                                        <img src={video.cover} className="cover-img w-full h-full object-cover transition-transform duration-500" />
+                                    </div>
+                                    <div className="p-4">
+                                        <h3 className="font-bold text-slate-200 group-hover:text-yellow-400 transition">{video.title}</h3>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {VIDEO_DATABASE.map(video => (
-                            <div key={video.id} className="video-card bg-[#0f172a] border border-slate-800 rounded-xl overflow-hidden cursor-pointer hover:border-slate-600 transition shadow-lg group" onClick={() => onSelectVideo(video)}>
-                                <div className="aspect-video overflow-hidden relative">
-                                    <img src={video.cover} alt={video.title} className="cover-img w-full h-full object-cover transition-transform duration-500" />
-                                    <div className="absolute bottom-2 right-2 bg-black/80 text-xs px-2 py-1 rounded font-mono">{video.duration}</div>
+                    <div className="w-full lg:w-[400px] shrink-0">
+                        <div className="bg-[#1e293b] border border-slate-700 p-6 rounded-2xl shadow-xl">
+                            <h2 className="text-xl font-bold text-yellow-400 mb-4">🛠️ DIY 動態影片生成</h2>
+                            <p className="text-sm text-slate-400 mb-6">貼上網址與 YouTube 轉錄稿，系統即時切分時間軸。</p>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <input type="text" placeholder="輸入 YouTube 影片 ID (例如: dQw4w9WgXcQ)" value={customId} onChange={(e) => setCustomId(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-yellow-400 text-white" />
                                 </div>
-                                <div className="p-4">
-                                    <h3 className="font-bold text-slate-200 group-hover:text-yellow-400 transition">{video.title}</h3>
+                                <div>
+                                    <textarea placeholder="貼上包含時間的 YouTube 轉錄稿..." value={customTranscript} onChange={(e) => setCustomTranscript(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm h-40 focus:outline-none focus:border-yellow-400 text-white hide-scrollbar"></textarea>
                                 </div>
+                                <button onClick={handleGenerate} className="w-full bg-yellow-400 text-slate-900 font-bold py-3 rounded-lg hover:bg-yellow-300">🚀 立即生成</button>
                             </div>
-                        ))}
+                        </div>
                     </div>
                 </div>
             );
@@ -192,29 +238,28 @@
                 }
             }, [currentTime, activeIndex, video]);
 
-            // 【真正的 API 查單字功能】
+            // 【核心升級】接上真實的翻譯 API！
             const handleWordClick = async (word) => {
-                // 清理標點符號，只保留英文字母
                 const cleanWord = word.replace(/[^a-zA-Z']/g, ""); 
                 if (!cleanWord) return;
-                
-                // 1. 先打開彈窗，顯示「載入中」的動畫
-                onWordClick({ word: cleanWord, translation: "", loading: true });
+
+                // 1. 先顯示載入中動畫
+                onWordClick({ word: cleanWord, translation: "正在連線辭典尋找翻譯...", isLoading: true });
 
                 try {
-                    // 2. 透過免費的 MyMemory API 去網路上即時查單字
-                    const response = await fetch(`https://api.mymemory.translated.net/get?q=${cleanWord}&langpair=en|zh-TW`);
-                    const data = await response.json();
-                    
-                    // 3. 拿到結果後，更新畫面
-                    if(data && data.responseData && data.responseData.translatedText) {
-                        onWordClick({ word: cleanWord, translation: data.responseData.translatedText, loading: false });
-                    } else {
-                        onWordClick({ word: cleanWord, translation: "翻譯失敗，請稍後再試。", loading: false });
+                    // 2. 呼叫真實的免費翻譯伺服器
+                    const res = await fetch(`https://api.mymemory.translated.net/get?q=${cleanWord}&langpair=en|zh-TW`);
+                    const data = await res.json();
+                    let result = data.responseData.translatedText;
+
+                    if (!result || result.toLowerCase() === cleanWord.toLowerCase()) {
+                        result = `暫時查無「${cleanWord}」的精準翻譯。`;
                     }
-                } catch (error) {
-                    // 如果網路斷線或出錯
-                    onWordClick({ word: cleanWord, translation: "無法連線到翻譯伺服器。", loading: false });
+                    
+                    // 3. 把真實翻譯顯示出來
+                    onWordClick({ word: cleanWord, translation: result, isLoading: false });
+                } catch (err) {
+                    onWordClick({ word: cleanWord, translation: "網路連線失敗，請稍後再試。", isLoading: false });
                 }
             };
 
@@ -228,6 +273,41 @@
                         <div className="aspect-video w-full max-w-5xl mx-auto rounded-xl overflow-hidden shadow-2xl border border-slate-800 relative bg-black">
                             <div id="yt-player" className="w-full h-full absolute top-0 left-0"></div>
                         </div>
+                        
+                        <div className="max-w-5xl mx-auto w-full mt-4">
+                            <h2 className="text-xl font-bold text-white">{video.title}</h2>
+                            <p className="text-slate-500 text-sm mt-1">點擊右側字幕生詞，系統會即時連線 API 翻譯。</p>
+                        </div>
                     </div>
 
-                    <div className="w-full lg:w-1/3 border-l border-slate-800 flex flex-col bg-[#0f
+                    <div className="w-full lg:w-1/3 border-l border-slate-800 flex flex-col bg-[#0f172a] h-[60vh] lg:h-full shrink-0">
+                        <div className="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-[#0f172a] z-10 shadow-sm">
+                            <h2 className="font-bold flex items-center gap-2 text-slate-200">
+                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                動態雙語字幕
+                            </h2>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto hide-scrollbar px-6 py-8 space-y-4 relative" ref={scrollContainerRef}>
+                            {video.subtitles.map((sub, index) => (
+                                <div key={index} id={`sub-${index}`} className={`sub-card p-4 rounded-xl cursor-default ${activeIndex === index ? 'active' : ''}`}>
+                                    <div className="text-xl font-bold text-slate-100 leading-relaxed mb-2 font-serif">
+                                        {sub.en.split(' ').map((word, wIndex) => (
+                                            <span key={wIndex} className="word" onClick={() => handleWordClick(word)}>{word}</span>
+                                        ))}
+                                    </div>
+                                    <div className="text-sm font-medium text-slate-500">{sub.zh}</div>
+                                </div>
+                            ))}
+                            <div className="h-40"></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

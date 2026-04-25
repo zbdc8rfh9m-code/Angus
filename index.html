@@ -14,26 +14,94 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* 字幕卡片樣式 */
         .sub-card { transition: all 0.3s ease; opacity: 0.4; transform: translateX(-10px); border-left: 4px solid transparent; }
         .sub-card.active { opacity: 1; transform: translateX(0); background-color: #1e293b; border-left: 4px solid #facc15; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         
-        /* 單字互動樣式 */
         .word { display: inline-block; cursor: pointer; transition: all 0.2s; margin-right: 5px; }
         .word:hover { color: #facc15; background-color: rgba(250, 204, 21, 0.15); border-radius: 4px; transform: translateY(-2px); }
         
-        /* 影片封面懸停效果 */
         .video-card:hover .cover-img { transform: scale(1.05); }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div style="color: white; text-align: center; margin-top: 100px; font-size: 20px;">
+            正在載入大廳中...<br><br>
+            <span style="font-size: 14px; color: #94a3b8;">如果畫面一直卡在這裡沒有變，代表程式碼複製時漏掉了某些符號，請重新「全選」並覆蓋貼上喔！</span>
+        </div>
+    </div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // 【資料庫模擬】這裡定義了首頁的影片清單與對應的真實字幕
         const VIDEO_DATABASE = [
+            {
+                id: 'jNQXAC9IVRw',
+                title: 'YouTube 史上第一支影片 (Me at the zoo)',
+                cover: 'https://img.youtube.com/vi/jNQXAC9IVRw/hqdefault.jpg',
+                duration: '0:18',
+                tags: ['初級', '日常 Vlog'],
+                subtitles: [
+                    { start: 0, end: 3, en: "Alright, so here we are in front of the elephants.", zh: "好的，我們現在在這些大象面前。" },
+                    { start: 3, end: 8, en: "And the cool thing about these guys is that they have really, really, really long trunks.", zh: "這些傢伙最酷的地方在於，牠們有非常非常長的鼻子。" },
+                    { start: 8, end: 12, en: "And that's, that's cool.", zh: "而那，那真的很酷。" },
+                    { start: 12, end: 18, en: "And that's pretty much all there is to say.", zh: "大概就是這樣了。" }
+                ]
+            },
+            {
+                id: 'dQw4w9WgXcQ',
+                title: '經典神曲 (Never Gonna Give You Up)',
+                cover: 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+                duration: '3:32',
+                tags: ['中級', '音樂原聲'],
+                subtitles: [
+                    { start: 0, end: 18, en: "(Music playing)", zh: "(音樂播放中)" },
+                    { start: 18, end: 22, en: "We're no strangers to love", zh: "我們對愛情並不陌生" },
+                    { start: 22, end: 27, en: "You know the rules and so do I", zh: "你懂規矩，我也懂" },
+                    { start: 27, end: 35, en: "A full commitment's what I'm thinking of", zh: "我心裡想的是全心全意的承諾" },
+                    { start: 35, end: 40, en: "You wouldn't get this from any other guy", zh: "你無法從其他男人那裡得到這個" }
+                ]
+            }
+        ];
+
+        const MOCK_DICTIONARY = {
+            "elephants": "n. 大象 (elephant 的複數)",
+            "trunks": "n. (大象的) 鼻子；樹幹；汽車後車廂",
+            "strangers": "n. 陌生人 (stranger 的複數)",
+            "commitment": "n. 承諾，保證；奉獻",
+            "desert": "v. 拋棄，遺棄 (此處作動詞)"
+        };
+
+        function App() {
+            const [activeVideo, setActiveVideo] = useState(null);
+            const [dictWord, setDictWord] = useState(null);
+
+            const closeDict = () => setDictWord(null);
+
+            return (
+                <div className="flex flex-col h-screen bg-[#020617]">
+                    <header className="flex justify-between items-center px-6 py-4 bg-[#0f172a] border-b border-slate-800 shrink-0 z-10">
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveVideo(null)}>
+                            <div className="w-8 h-8 bg-yellow-400 rounded flex items-center justify-center font-bold text-slate-900">奶</div>
+                            <span className="text-xl font-bold tracking-wider hover:text-yellow-400 transition">油管英語場景庫</span>
+                        </div>
+                        <div className="flex gap-4 text-sm font-medium">
+                            <button onClick={() => setActiveVideo(null)} className="text-slate-300 hover:text-white transition">首頁大廳</button>
+                            <button className="bg-yellow-400 text-slate-900 px-4 py-1.5 rounded-full hover:bg-yellow-300 transition shadow-[0_0_15px_rgba(250,204,21,0.3)]">
+                                登入 / 註冊
+                            </button>
+                        </div>
+                    </header>
+
+                    <main className="flex-1 overflow-y-auto hide-scrollbar relative">
+                        {!activeVideo ? (
+                            <HomeView onSelectVideo={setActiveVideo} />
+                        ) : (
+                            <VideoPlayerView video={activeVideo} onBack={() => setActiveVideo(null)} onWordClick={setDictWord} />
+                        )}
+                    </main>
+
+                    {dict
             {
                 id: 'jNQXAC9IVRw',
                 title: 'YouTube 史上第一支影片 (Me at the zoo)',

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>我的私人口語場景庫 (終極兼容版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // 設定區：在此更換影片 ID (v= 後面那串)
+        const VIDEO_ID = 'dQw4w9WgXcQ'; 
+        
+        const SUBTITLES = [
+            { en: "Never gonna give you up.", zh: "永遠不會放棄你。" },
+            { en: "Never gonna let you down.", zh: "永遠不會讓你失望。" },
+            { en: "Everything you see exists together in a delicate balance.", zh: "你所看到的一切都在微妙的平衡中共存。" }
+        ];
+
+        function App() {
+            const handleWordClick = (word) => {
+                const clean = word.replace(/[^a-zA-Z]/g, "");
+                window.open(`https://translate.google.com/?sl=en&tl=zh-TW&text=${clean}&op=translate`, '_blank');
+            };
+
+            return (
+                <div className="max-w-6xl mx-auto p-4">
+                    <header className="py-6">
+                        <h1 className="text-2xl font-bold text-slate-800">🎬 免登入英語學習工具</h1>
+                    </header>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* 影片區：使用最簡單的 iframe 嵌入 */}
+                        <div className="lg:col-span-2 shadow-xl rounded-xl overflow-hidden bg-black aspect-video">
+                            <iframe 
+                                width="100%" 
+                                height="100%" 
+                                src={`https://www.youtube.com/embed/${VIDEO_ID}`}
+                                frameBorder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowFullScreen
+                            ></iframe>
+                        </div>
+
+                        {/* 字幕互動區 */}
+                        <div className="bg-white rounded-xl shadow-lg border border-slate-200 flex flex-col h-[500px]">
+                            <div className="p-4 border-b bg-slate-100 font-bold">點擊單字查字典</div>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                                {SUBTITLES.map((sub, i) => (
+                                    <div key={i} className="p-3 hover:bg-blue-50 rounded-lg transition-colors border-b border-slate-50">
+                                        <div className="text-lg font-medium text-slate-800">
+                                            {sub.en.split(' ').map((w, idx) => (
+                                                <span 
+                                                    key={idx} 
+                                                    onClick={() => handleWordClick(w)} 
+                                                    className="cursor-pointer hover:text-blue-600 hover:underline mr-1"
+                                                >
+                                                    {w}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <div className="text-sm text-slate-500 mt-1">{sub.zh}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

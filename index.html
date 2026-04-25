@@ -3,19 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的 AI 英語場景庫</title>
+    <title>油管英語場景庫 - 沉浸式學習</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .subtitle-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); opacity: 0.3; transform: scale(0.95); }
-        .subtitle-card.active { opacity: 1; transform: scale(1); border-left: 5px solid #fbbf24; background-color: white; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .word-hover:hover { background-color: #fef3c7; color: #d97706; border-radius: 4px; text-decoration: underline; }
-        /* 隱藏滾動條但保持功能 */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #0f172a; color: white; margin: 0; overflow-x: hidden; }
+        
+        /* 隱藏滾動條但保留滾動功能 */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 字幕卡片動畫與奶酪包同款樣式 */
+        .sub-card {
+            transition: all 0.3s ease;
+            opacity: 0.4;
+            transform: translateX(-10px);
+            border-left: 4px solid transparent;
+        }
+        .sub-card.active {
+            opacity: 1;
+            transform: translateX(0);
+            background-color: #1e293b;
+            border-left: 4px solid #facc15; /* 經典黃色高亮 */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        
+        /* 單字互動 */
+        .word {
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 4px;
+        }
+        .word:hover {
+            color: #facc15;
+            background-color: rgba(250, 204, 21, 0.1);
+            border-radius: 4px;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -24,74 +52,169 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // 【這裡設定影片與字幕】
-        const CONFIG = {
-            videoId: 'dQw4w9WgXcQ', // 你可以換成任何 YT 影片 ID
-            subtitles: [
-                { start: 0, end: 4, en: "Welcome to your immersive English scene library.", zh: "歡迎來到你的沉浸式英語場景庫。" },
-                { start: 4, end: 8, en: "Don't just memorize words, live the language.", zh: "不要只是死背單字，要活用語言。" },
-                { start: 8, end: 12, en: "Click any word to see its magic immediately.", zh: "點擊任何單字，立即查看它的魔力。" },
-                { start: 12, end: 16, en: "This is the best way to master real English.", zh: "這是掌握道地英語的最佳方式。" },
-                { start: 16, end: 20, en: "Never gonna give you up, never gonna let you down.", zh: "永遠不會放棄你，永遠不會讓你失望。" }
-            ]
-        };
+        // 【修改這裡換影片】
+        const VIDEO_ID = 'dQw4w9WgXcQ';
+        const SUBTITLES = [
+            { start: 0, end: 4, en: "Welcome to the immersive English scene library.", zh: "歡迎來到沉浸式英語場景庫。" },
+            { start: 4, end: 8, en: "We don't memorize vocabulary, we build muscle memory.", zh: "我們不背單字，我們建立肌肉記憶。" },
+            { start: 8, end: 13, en: "Click on any word to check its meaning instantly.", zh: "點擊任何單字即可即時查看其含義。" },
+            { start: 13, end: 18, en: "This is exactly how native speakers learn.", zh: "這正是母語人士學習的方式。" },
+            { start: 18, end: 22, en: "Never gonna give you up, never gonna let you down.", zh: "永遠不會放棄你，永遠不會讓你失望。" },
+            { start: 22, end: 27, en: "Never gonna run around and desert you.", zh: "永遠不會亂跑，也不會拋棄你。" }
+        ];
 
         function App() {
             const [currentTime, setCurrentTime] = useState(0);
-            const [activeSub, setActiveSub] = useState(null);
+            const [activeIndex, setActiveIndex] = useState(-1);
             const playerRef = useRef(null);
-            const scrollRef = useRef(null);
+            const scrollContainerRef = useRef(null);
 
+            // 1. 強制初始化 YouTube 播放器
             useEffect(() => {
-                // 初始化 YouTube API
-                window.onYouTubeIframeAPIReady = () => {
-                    playerRef.current = new YT.Player('player', {
-                        videoId: CONFIG.videoId,
-                        playerVars: { 'rel': 0, 'modestbranding': 1 },
-                        events: {
-                            'onStateChange': (e) => {
-                                if (e.data === YT.PlayerState.PLAYING) {
-                                    const timer = setInterval(() => {
-                                        const time = playerRef.current.getCurrentTime();
-                                        setCurrentTime(time);
-                                    }, 200);
-                                    return () => clearInterval(timer);
-                                }
-                            }
+                const loadPlayer = () => {
+                    playerRef.current = new window.YT.Player('yt-player', {
+                        videoId: VIDEO_ID,
+                        playerVars: { 
+                            'rel': 0, 
+                            'modestbranding': 1,
+                            'playsinline': 1
                         }
                     });
                 };
+
                 if (!window.YT) {
                     const tag = document.createElement('script');
                     tag.src = "https://www.youtube.com/iframe_api";
-                    document.body.appendChild(tag);
+                    const firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                    window.onYouTubeIframeAPIReady = loadPlayer;
+                } else {
+                    loadPlayer();
                 }
+
+                // 2. 暴力輪詢時間 (每 0.1 秒檢查一次，保證字幕絕對同步)
+                const timer = setInterval(() => {
+                    if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+                        const time = playerRef.current.getCurrentTime();
+                        setCurrentTime(time);
+                    }
+                }, 100);
+
+                return () => clearInterval(timer);
             }, []);
 
-            // 同步字幕與自動滾動
+            // 3. 處理字幕高亮與自動滾動
             useEffect(() => {
-                const current = CONFIG.subtitles.find(s => currentTime >= s.start && currentTime <= s.end);
-                if (current && current !== activeSub) {
-                    setActiveSub(current);
-                    // 自動滾動到當前字幕
-                    const activeElem = document.getElementById(`sub-${CONFIG.subtitles.indexOf(current)}`);
-                    if (activeElem) {
-                        activeElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const index = SUBTITLES.findIndex(s => currentTime >= s.start && currentTime <= s.end);
+                
+                if (index !== -1 && index !== activeIndex) {
+                    setActiveIndex(index);
+                    
+                    // 自動滾動到正中間
+                    const element = document.getElementById(`sub-${index}`);
+                    const container = scrollContainerRef.current;
+                    if (element && container) {
+                        const targetScroll = element.offsetTop - (container.offsetHeight / 2) + (element.offsetHeight / 2);
+                        container.scrollTo({ top: targetScroll, behavior: 'smooth' });
                     }
                 }
-            }, [currentTime]);
+            }, [currentTime, activeIndex]);
 
+            // 點擊查單字功能 (開啟劍橋字典)
             const handleWordClick = (word) => {
-                const cleanWord = word.replace(/[^a-zA-Z]/g, "");
-                window.open(`https://dictionary.cambridge.org/zht/詞典/英語-漢語-繁體/${cleanWord}`, '_blank');
+                const cleanWord = word.replace(/[^a-zA-Z]/g, "").toLowerCase();
+                if (cleanWord) {
+                    window.open(`https://dictionary.cambridge.org/zht/詞典/英語-漢語-繁體/${cleanWord}`, '_blank');
+                }
             };
 
             return (
-                <div className="min-h-screen p-4 md:p-10">
-                    <div className="max-w-7xl mx-auto">
-                        <header className="flex items-center justify-between mb-8">
-                            <div>
-                                <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">奶酪包 <span className="text-yellow-500 text-lg">PRO</span></h1>
-                                <p className="text-slate-500 font-medium">沉浸式真實語境，重塑英語本能</p>
+                <div className="flex flex-col h-screen">
+                    {/* 頂部導航列 */}
+                    <header className="flex justify-between items-center px-6 py-4 bg-[#0f172a] border-b border-slate-800 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-yellow-400 rounded flex items-center justify-center font-bold text-slate-900">奶</div>
+                            <span className="text-xl font-bold tracking-wider">油管英語場景庫</span>
+                            <span className="bg-slate-800 text-xs px-2 py-1 rounded text-slate-400 ml-2">PRO</span>
+                        </div>
+                        <div className="flex gap-4 text-sm font-medium">
+                            <button className="text-slate-300 hover:text-white transition">首頁大廳</button>
+                            <button className="text-slate-300 hover:text-white transition">專屬數據手帳</button>
+                            <button className="bg-yellow-400 text-slate-900 px-4 py-1.5 rounded-full hover:bg-yellow-300 transition shadow-[0_0_15px_rgba(250,204,21,0.3)]">
+                                登入 / 註冊
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* 主要內容區 (左影片、右字幕) */}
+                    <div className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-[#020617]">
+                        
+                        {/* 左側：影片播放區 */}
+                        <div className="w-full lg:w-2/3 p-4 md:p-8 flex flex-col justify-center bg-black/40">
+                            <div className="aspect-video w-full max-w-5xl mx-auto rounded-xl overflow-hidden shadow-2xl border border-slate-800 relative">
+                                <div id="yt-player" className="w-full h-full absolute top-0 left-0"></div>
                             </div>
-                            <div className="hidden md:block bg-white px-4 py-2 rounded-full shadow-sm border
+                            
+                            <div className="max-w-5xl mx-auto w-full mt-6 flex justify-between items-center px-2">
+                                <div>
+                                    <h1 className="text-2xl font-bold text-white mb-1">看懂不是目的，能張口說出來才是。</h1>
+                                    <p className="text-slate-400 text-sm">💡 原聲影片找語感 ➔ 精讀查漏存單詞</p>
+                                </div>
+                                <div className="text-right hidden sm:block">
+                                    <div className="text-yellow-400 font-mono text-xl">{Math.floor(currentTime)}s</div>
+                                    <div className="text-slate-500 text-xs uppercase tracking-widest">Current Time</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 右側：互動雙語字幕區 */}
+                        <div className="w-full lg:w-1/3 border-l border-slate-800 flex flex-col bg-[#0f172a] h-[50vh] lg:h-auto">
+                            <div className="px-6 py-4 border-b border-slate-800 flex justify-between items-center shrink-0">
+                                <h2 className="font-bold flex items-center gap-2 text-slate-200">
+                                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                    動態雙語字幕
+                                </h2>
+                                <span className="text-xs font-mono text-slate-500 bg-slate-800 px-2 py-1 rounded">AUTO-SYNC</span>
+                            </div>
+                            
+                            <div 
+                                className="flex-1 overflow-y-auto hide-scrollbar px-6 py-10 space-y-4"
+                                ref={scrollContainerRef}
+                            >
+                                {SUBTITLES.map((sub, index) => (
+                                    <div 
+                                        key={index} 
+                                        id={`sub-${index}`}
+                                        className={`sub-card p-4 rounded-xl cursor-default ${activeIndex === index ? 'active' : ''}`}
+                                    >
+                                        <div className="text-lg md:text-xl font-bold text-slate-100 leading-relaxed mb-2 font-serif">
+                                            {sub.en.split(' ').map((word, wIndex) => (
+                                                <span 
+                                                    key={wIndex} 
+                                                    className="word"
+                                                    onClick={() => handleWordClick(word)}
+                                                >
+                                                    {word}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <div className="text-sm font-medium text-slate-400">
+                                            {sub.zh}
+                                        </div>
+                                    </div>
+                                ))}
+                                {/* 底部留白，讓最後一句也能置中 */}
+                                <div className="h-40"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
